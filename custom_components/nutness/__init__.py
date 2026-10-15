@@ -59,26 +59,37 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     def text(value: Any, fmt: str) -> str:
         return value if isinstance(value, str) else value.strftime(fmt)
 
-    async def run(coordinator: NutnessCoordinator, coro) -> dict[str, Any]:
+    async def run(coordinator: NutnessCoordinator, coro, what: str = "") -> dict[str, Any]:
         try:
-            return await coro
+            r = await coro
         except NutnessAuthError as err:
+            _LOGGER.warning("%s : clé refusée (%s)", what, err)
             coordinator.config_entry.async_start_reauth(hass)
             raise HomeAssistantError(str(err)) from err
         except NutnessError as err:
+            _LOGGER.warning("%s : échec (%s)", what, err)
             raise HomeAssistantError(str(err)) from err
+        if what:
+            _LOGGER.info("%s : %s", what, r.get("status") if isinstance(r, dict) else r)
+        return r
 
     async def book(call: ServiceCall) -> ServiceResponse:
+        _LOGGER.info("Action %s reçue : %s", call.service, dict(call.data))
         c = coordinator_for(call)
         time = text(call.data["time"], "%H:%M")[:5].zfill(5)
-        r = await run(c, c.api.book(text(call.data["date"], "%Y-%m-%d"), time, call.data["activity"]))
+        date = text(call.data["date"], "%Y-%m-%d")
+        what = f"Réservation {date} {time} {call.data['activity']}"
+        r = await run(c, c.api.book(date, time, call.data["activity"]), what)
         await c.async_request_refresh()
         return r
 
     async def cancel(call: ServiceCall) -> ServiceResponse:
+        _LOGGER.info("Action %s reçue : %s", call.service, dict(call.data))
         c = coordinator_for(call)
         time = text(call.data["time"], "%H:%M")[:5].zfill(5)
-        r = await run(c, c.api.cancel(text(call.data["date"], "%Y-%m-%d"), time, call.data["activity"]))
+        date = text(call.data["date"], "%Y-%m-%d")
+        what = f"Annulation {date} {time} {call.data['activity']}"
+        r = await run(c, c.api.cancel(date, time, call.data["activity"]), what)
         await c.async_request_refresh()
         return r
 
