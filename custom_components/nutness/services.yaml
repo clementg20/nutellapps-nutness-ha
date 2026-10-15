@@ -1,0 +1,62 @@
+reserver:
+  fields:
+    date:
+      required: true
+      example: "2026-10-20"
+      selector:
+        date:
+    time:
+      required: true
+      example: "19:15"
+      selector:
+        time:
+    activity:
+      required: true
+      example: RPM
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: nutness
+annuler:
+  fields:
+    date:
+      required: true
+      example: "2026-10-20"
+      selector:
+        date:
+    time:
+      required: true
+      example: "19:15"
+      selector:
+        time:
+    activity:
+      required: true
+      example: RPM
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: nutness
+planning:
+  fields:
+    date:
+      example: "2026-10-20"
+      selector:
+        date:
+    week:
+      default: true
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: nutness
+actualiser:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: nutness

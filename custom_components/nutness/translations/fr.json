@@ -1,0 +1,168 @@
+{
+  "config": {
+    "step": {
+      "authorize": {
+        "title": "Connexion à Nutness",
+        "description": "Une page Nutness s'ouvre : connectez-vous, vérifiez vos identifiants du club, puis autorisez ce Home Assistant.\n\nCode affiché sur la page : **{code}**"
+      },
+      "reauth_confirm": {
+        "title": "Reconnecter Nutness",
+        "description": "L'accès de ce Home Assistant a été révoqué ou votre compte du club a été retiré. Reconnectez-le."
+      }
+    },
+    "abort": {
+      "cannot_connect": "Le serveur Nutness ne répond pas. Réessayez plus tard.",
+      "denied": "Accès refusé sur la page Nutness.",
+      "expired": "Le délai de 10 minutes est dépassé. Recommencez.",
+      "already_configured": "Ce compte est déjà relié à ce Home Assistant (clé mise à jour).",
+      "reauth_successful": "Nutness est reconnecté.",
+      "wrong_account": "Ce n'est pas le même compte que celui de l'intégration."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Notifications",
+        "data": {
+          "notify": "Envoyer à",
+          "notify_events": "Pour"
+        },
+        "data_description": {
+          "notify": "Service de notification (application mobile…) ou notification dans Home Assistant."
+        }
+      }
+    }
+  },
+  "selector": {
+    "notify_target": {
+      "options": {
+        "persistent_notification": "Notification Home Assistant"
+      }
+    },
+    "notify_events": {
+      "options": {
+        "promoted": "Place libérée (liste d'attente → inscrit)",
+        "planned_done": "Réservation automatique faite",
+        "failed": "Réservation automatique échouée",
+        "cancelled": "Cours annulé par le club"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_class": {
+        "name": "Prochain cours"
+      }
+    },
+    "calendar": {
+      "classes": {
+        "name": "Cours"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Actualiser"
+      }
+    },
+    "event": {
+      "booking_event": {
+        "name": "Réservation",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "booked": "Réservé",
+              "waiting": "Liste d'attente",
+              "promoted": "Place libérée",
+              "waiting_position": "Rang changé",
+              "cancelled": "Annulé",
+              "planned": "Prévu",
+              "failed": "Échec"
+            }
+          }
+        }
+      }
+    }
+  },
+  "services": {
+    "reserver": {
+      "name": "Réserver un cours",
+      "description": "Réserve un cours, ou s'inscrit en liste d'attente s'il est complet. Plus de 72 h avant le cours, la réservation est faite automatiquement à l'ouverture des inscriptions.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Jour du cours."
+        },
+        "time": {
+          "name": "Heure",
+          "description": "Heure de début du cours (5 minutes de tolérance)."
+        },
+        "activity": {
+          "name": "Activité",
+          "description": "Nom de l'activité, même partiel (RPM, Pilates…)."
+        },
+        "config_entry_id": {
+          "name": "Compte",
+          "description": "À préciser seulement si plusieurs comptes Nutness sont reliés."
+        }
+      }
+    },
+    "annuler": {
+      "name": "Annuler un cours",
+      "description": "Annule une réservation, une place en liste d'attente ou une réservation prévue.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Jour du cours."
+        },
+        "time": {
+          "name": "Heure",
+          "description": "Heure de début du cours."
+        },
+        "activity": {
+          "name": "Activité",
+          "description": "Nom de l'activité, même partiel."
+        },
+        "config_entry_id": {
+          "name": "Compte",
+          "description": "À préciser seulement si plusieurs comptes Nutness sont reliés."
+        }
+      }
+    },
+    "planning": {
+      "name": "Planning",
+      "description": "Renvoie les cours du club, avec places et listes d'attente.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Premier jour (par défaut aujourd'hui)."
+        },
+        "week": {
+          "name": "Semaine",
+          "description": "7 jours à partir de la date, au lieu d'un seul."
+        },
+        "config_entry_id": {
+          "name": "Compte",
+          "description": "À préciser seulement si plusieurs comptes Nutness sont reliés."
+        }
+      }
+    },
+    "actualiser": {
+      "name": "Actualiser",
+      "description": "Relit tout de suite les réservations auprès du club.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Compte",
+          "description": "À préciser seulement si plusieurs comptes Nutness sont reliés."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_entry": {
+      "message": "Aucun compte Nutness n'est relié."
+    },
+    "several_entries": {
+      "message": "Plusieurs comptes Nutness sont reliés : précisez le compte."
+    }
+  }
+}

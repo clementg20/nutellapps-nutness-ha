@@ -1,0 +1,168 @@
+{
+  "config": {
+    "step": {
+      "authorize": {
+        "title": "Connect to Nutness",
+        "description": "A Nutness page opens: sign in, check your club credentials, then authorize this Home Assistant.\n\nCode shown on the page: **{code}**"
+      },
+      "reauth_confirm": {
+        "title": "Reconnect Nutness",
+        "description": "This Home Assistant's access was revoked or your club account was removed. Reconnect it."
+      }
+    },
+    "abort": {
+      "cannot_connect": "The Nutness server does not respond. Try again later.",
+      "denied": "Access denied on the Nutness page.",
+      "expired": "The 10 minute delay is over. Start again.",
+      "already_configured": "This account is already linked to this Home Assistant (key updated).",
+      "reauth_successful": "Nutness is reconnected.",
+      "wrong_account": "This is not the same account as the integration's."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Notifications",
+        "data": {
+          "notify": "Send to",
+          "notify_events": "For"
+        },
+        "data_description": {
+          "notify": "Notification service (mobile app…) or Home Assistant notification."
+        }
+      }
+    }
+  },
+  "selector": {
+    "notify_target": {
+      "options": {
+        "persistent_notification": "Home Assistant notification"
+      }
+    },
+    "notify_events": {
+      "options": {
+        "promoted": "Spot freed (waiting list → booked)",
+        "planned_done": "Automatic booking done",
+        "failed": "Automatic booking failed",
+        "cancelled": "Class cancelled by the club"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_class": {
+        "name": "Next class"
+      }
+    },
+    "calendar": {
+      "classes": {
+        "name": "Classes"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Refresh"
+      }
+    },
+    "event": {
+      "booking_event": {
+        "name": "Booking",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "booked": "Booked",
+              "waiting": "Waiting list",
+              "promoted": "Spot freed",
+              "waiting_position": "Rank changed",
+              "cancelled": "Cancelled",
+              "planned": "Planned",
+              "failed": "Failed"
+            }
+          }
+        }
+      }
+    }
+  },
+  "services": {
+    "reserver": {
+      "name": "Book a class",
+      "description": "Books a class, or joins the waiting list if it is full. More than 72 h before the class, the booking is made automatically when registrations open.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Day of the class (first day for the schedule)."
+        },
+        "time": {
+          "name": "Time",
+          "description": "Start time of the class."
+        },
+        "activity": {
+          "name": "Activity",
+          "description": "Activity name, even partial (RPM, Pilates…)."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed when several Nutness accounts are linked."
+        }
+      }
+    },
+    "annuler": {
+      "name": "Cancel a class",
+      "description": "Cancels a booking, a waiting list spot or a planned booking.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Day of the class (first day for the schedule)."
+        },
+        "time": {
+          "name": "Time",
+          "description": "Start time of the class."
+        },
+        "activity": {
+          "name": "Activity",
+          "description": "Activity name, even partial (RPM, Pilates…)."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed when several Nutness accounts are linked."
+        }
+      }
+    },
+    "planning": {
+      "name": "Schedule",
+      "description": "Returns the club's classes, with spots and waiting lists.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Day of the class (first day for the schedule)."
+        },
+        "week": {
+          "name": "Week",
+          "description": "7 days from the date instead of one."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed when several Nutness accounts are linked."
+        }
+      }
+    },
+    "actualiser": {
+      "name": "Refresh",
+      "description": "Reads the bookings from the club right now.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed when several Nutness accounts are linked."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_entry": {
+      "message": "No Nutness account is linked."
+    },
+    "several_entries": {
+      "message": "Several Nutness accounts are linked: specify the account."
+    }
+  }
+}

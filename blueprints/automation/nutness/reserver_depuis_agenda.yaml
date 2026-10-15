@@ -1,0 +1,54 @@
+blueprint:
+  name: Nutness — réserver depuis un agenda
+  description: >-
+    Réserve automatiquement les cours notés dans un agenda. Un événement dont le titre est
+    « <activité> <mot-clé> » (par exemple « RPM Nutness ») est réservé à l'heure de l'événement.
+    Plus de 72 h avant le cours, Nutness enregistre la demande et réserve à l'ouverture des inscriptions.
+  domain: automation
+  source_url: https://github.com/clementg20/nutellapps-nutness-ha/blob/main/blueprints/automation/nutness/reserver_depuis_agenda.yaml
+  input:
+    calendar:
+      name: Agenda
+      selector:
+        entity:
+          domain: calendar
+    keyword:
+      name: Mot-clé en fin de titre
+      description: Dernier mot du titre des événements à réserver (par exemple « Nutness » ou le nom du club).
+      default: Nutness
+    offset:
+      name: Délai avant le cours
+      description: Moment où la demande est envoyée, avant le début de l'événement.
+      default:
+        days: 4
+        hours: 0
+        minutes: 0
+      selector:
+        duration:
+          enable_day: true
+
+triggers:
+  - trigger: calendar
+    entity_id: !input calendar
+    event: start
+    offset: !input offset
+
+variables:
+  keyword: !input keyword
+  summary: "{{ trigger.calendar_event.summary | default('') | trim }}"
+
+conditions:
+  - condition: template
+    value_template: >-
+      {% set words = summary.split() %}
+      {{ words | length >= 2 and words[-1] | lower == keyword | lower }}
+
+actions:
+  - action: nutness.reserver
+    data:
+      date: "{{ trigger.calendar_event.start[:10] }}"
+      time: "{{ trigger.calendar_event.start[11:16] }}"
+      activity: "{{ summary.split()[:-1] | join(' ') }}"
+    continue_on_error: true
+
+mode: parallel
