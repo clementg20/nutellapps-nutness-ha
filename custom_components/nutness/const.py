@@ -6,7 +6,7 @@ DOMAIN = "nutness"
 SITE = "https://nutness.cgrand.fr"
 API_BASE = f"{SITE}/ha/v1"
 AUTHORIZE_URL = f"{SITE}/autoriser"
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 SCAN_INTERVAL = timedelta(minutes=5)
 CONF_TOKEN = "token"

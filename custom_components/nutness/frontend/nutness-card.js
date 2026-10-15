@@ -159,6 +159,7 @@ class NutnessCard extends HTMLElement {
       this._flash(`${STATUS_LABEL[r?.status] ?? r?.status ?? 'OK'} · ${name} ${hh(item.time)}`);
       if (this._planning) await this._loadPlanning();
     } catch (err) {
+      console.error('nutness', op, item, err);
       this._flash(`❌ ${err.message || 'Refusé'}`);
     }
     this._busy = null;
@@ -252,6 +253,7 @@ class NutnessCard extends HTMLElement {
       <span class="week">${label}</span>
       <button class="icon" data-action="week" data-delta="1" ${this._week >= 8 ? 'disabled' : ''} title="Semaine suivante" aria-label="Semaine suivante"><ha-icon icon="mdi:chevron-right"></ha-icon></button>
       ${this._popup ? '<button class="icon" data-action="close-planning" title="Fermer" aria-label="Fermer"><ha-icon icon="mdi:close"></ha-icon></button>' : ''}
+      ${this._msg ? `<div class="msg">${esc(this._msg)}</div>` : ''}
     </div>`;
     if (!this._classes) return `<div class="planning">${nav}<div class="empty">Chargement…</div></div>`;
 
@@ -363,7 +365,8 @@ const CSS = `
   button.act:hover { background: var(--secondary-background-color); }
   button.act.armed.book { background: var(--primary-color); color: var(--text-primary-color, #fff); }
   button.act.armed.cancel { background: var(--error-color, #e53935); color: #fff; }
-  .nav { display: flex; align-items: center; justify-content: space-between; }
+  .nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+  .nav .msg { flex-basis: 100%; text-align: center; font-weight: 500; padding: 4px 0; }
   .week { font-weight: 500; font-size: 14px; }
   .day { padding: 2px 6px 2px 0; border-radius: 6px; }
   .day.alt { background: color-mix(in srgb, var(--primary-color) 6%, transparent); }
