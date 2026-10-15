@@ -87,9 +87,6 @@ class NutnessCard extends HTMLElement {
     this._dialog = this.shadowRoot.getElementById('dialog');
     this._dialogBody = this.shadowRoot.getElementById('dialog-body');
     this.shadowRoot.addEventListener('click', (e) => this._onClick(e));
-    // Diagnostic (1.0.3) : appuis reçus dans la fenêtre du planning.
-    this._dialog.addEventListener('pointerdown', (e) => this._log(`pointerdown planning sur ${e.composedPath()[0]?.tagName ?? '?'}`), true);
-    this._dialog.addEventListener('click', (e) => this._log(`click planning sur ${e.composedPath()[0]?.tagName ?? '?'} → ${e.target.closest?.('[data-action]')?.dataset.action ?? 'aucune action'}`), true);
     // Fermeture : bouton ✕, touche Échap ou appui à côté de la fenêtre.
     this._dialog.addEventListener('click', (e) => { if (e.target === this._dialog) this._dialog.close(); });
     this._dialog.addEventListener('close', () => { if (this._planning) { this._planning = false; this._armed = null; this._render(); } });
@@ -162,10 +159,8 @@ class NutnessCard extends HTMLElement {
     this._busy = `${item.date} ${item.time} ${item.activity}`;
     this._render();
     const name = this._short(item.activity);
-    this._log(`${op} ${item.date} ${item.time} ${item.activity} : envoi`);
     try {
       const r = await this._service(op === 'book' ? 'reserver' : 'annuler', { date: item.date, time: item.time, activity: item.activity });
-      this._log(`${op} ${item.date} ${item.time} ${item.activity} : ${r?.status}`);
       this._flash(`${STATUS_LABEL[r?.status] ?? r?.status ?? 'OK'} · ${name} ${hh(item.time)}`);
       if (this._planning) await this._loadPlanning();
     } catch (err) {
@@ -204,7 +199,6 @@ class NutnessCard extends HTMLElement {
       // Deux appuis : le premier arme le bouton, le second confirme.
       const item = { date: el.dataset.date, time: el.dataset.time, activity: el.dataset.activity };
       const key = `${action} ${item.date} ${item.time} ${item.activity}`;
-      this._log(`appui ${key} (${this._armed === key ? 'confirmation' : 'premier appui'})`);
       if (this._armed === key) { clearTimeout(this._armTimer); this._act(action, item); return; }
       this._armed = key;
       clearTimeout(this._armTimer);
