@@ -26,7 +26,7 @@ const family = (name) => {
 const pad = (n) => String(n).padStart(2, '0');
 const isoDay = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parseDay = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
-const hh = (t) => t.replace(':', 'h');
+const hh = (t) => esc(String(t ?? '').replace(':', 'h'));
 const dayLabel = (s) => { const d = parseDay(s); return `${DAYS_SHORT[(d.getDay() + 6) % 7]} ${d.getDate()} ${MONTHS[d.getMonth()]}`; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const store = {
@@ -223,7 +223,7 @@ class NutnessCard extends HTMLElement {
     const busy = this._busy === `${item.date} ${item.time} ${item.activity}`;
     const icon = busy ? 'mdi:loading' : op === 'cancel' ? (armed ? 'mdi:close-circle' : 'mdi:close-circle-outline') : (armed ? 'mdi:check-bold' : 'mdi:plus');
     const label = op === 'cancel' ? 'Annuler' : 'Réserver';
-    return `<button class="act ${op}${armed ? ' armed' : ''}${busy ? ' busy' : ''}" data-action="${op}" data-date="${item.date}" data-time="${item.time}"
+    return `<button class="act ${op}${armed ? ' armed' : ''}${busy ? ' busy' : ''}" data-action="${op}" data-date="${esc(item.date)}" data-time="${esc(item.time)}"
       data-activity="${esc(item.activity)}" title="${label}" aria-label="${label}"><ha-icon icon="${icon}"></ha-icon></button>`;
   }
 

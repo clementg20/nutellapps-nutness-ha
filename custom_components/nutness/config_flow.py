@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -15,9 +16,13 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import NutnessError, poll_link, start_link
-from .const import CONF_NOTIFY, CONF_NOTIFY_EVENTS, CONF_TOKEN, DEFAULT_NOTIFY_EVENTS, DOMAIN, NOTIFY_CHOICES
+from .const import AUTHORIZE_URL, CONF_NOTIFY, CONF_NOTIFY_EVENTS, CONF_TOKEN, DEFAULT_NOTIFY_EVENTS, DOMAIN, NOTIFY_CHOICES
 
 _LOGGER = logging.getLogger(__name__)
+
+# Réponses du serveur acceptées telles quelles : rien d'autre n'est ouvert ni enregistré.
+USER_CODE = re.compile(r"^[A-Z0-9]{4}-[A-Z0-9]{4}$")
+TOKEN = re.compile(r"^nts_[A-Za-z0-9_-]{20,100}$")
 
 
 class NutnessConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -43,10 +48,12 @@ class NutnessConfigFlow(ConfigFlow, domain=DOMAIN):
         except NutnessError as err:
             _LOGGER.warning("Demande de liaison refusée : %s", err)
             return self.async_abort(reason="cannot_connect")
+        if not isinstance(self._link, dict) or not USER_CODE.match(str(self._link.get("user_code", ""))):
+            return self.async_abort(reason="cannot_connect")
         self._poll_task = self.hass.async_create_background_task(self._async_poll(), "nutness_link_poll")
         return self.async_external_step(
             step_id="authorize",
-            url=self._link["verification_uri_complete"],
+            url=f"{AUTHORIZE_URL}?code={self._link['user_code']}",
             description_placeholders={"code": self._link["user_code"]},
         )
 
@@ -69,7 +76,7 @@ class NutnessConfigFlow(ConfigFlow, domain=DOMAIN):
         await self.hass.config_entries.flow.async_configure(flow_id=self.flow_id, user_input=outcome)
 
     async def async_step_authorize(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        if user_input and user_input.get("status") == "approved" and user_input.get("token"):
+        if user_input and user_input.get("status") == "approved" and TOKEN.match(str(user_input.get("token", ""))):
             self._result = user_input
             return self.async_external_step_done(next_step_id="finish")
         self._failure = "expired" if (user_input or {}).get("status") in ("expired", "invalid") else "denied"

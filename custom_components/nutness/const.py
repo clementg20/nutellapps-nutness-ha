@@ -3,8 +3,10 @@
 from datetime import timedelta
 
 DOMAIN = "nutness"
-API_BASE = "https://nutness.cgrand.fr/ha/v1"
-VERSION = "1.0.0"
+SITE = "https://nutness.cgrand.fr"
+API_BASE = f"{SITE}/ha/v1"
+AUTHORIZE_URL = f"{SITE}/autoriser"
+VERSION = "1.0.1"
 
 SCAN_INTERVAL = timedelta(minutes=5)
 CONF_TOKEN = "token"
