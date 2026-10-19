@@ -122,7 +122,7 @@ class NutnessOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
         services = sorted(self.hass.services.async_services().get("notify", {}))
-        targets = [s for s in services if s not in ("send_message", "notify")]
+        targets = [s for s in services if s not in ("send_message", "notify", "persistent_notification")]
         options = self.config_entry.options
         schema = vol.Schema(
             {
