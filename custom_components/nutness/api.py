@@ -83,6 +83,9 @@ class NutnessApi:
     async def state(self, after: int | None) -> dict[str, Any]:
         return await self._call("GET", "/state", params=None if after is None else {"after": after})
 
+    async def friends(self) -> dict[str, Any]:
+        return await self._call("GET", "/friends")
+
     async def refresh(self) -> dict[str, Any]:
         return await self._call("POST", "/refresh")
 

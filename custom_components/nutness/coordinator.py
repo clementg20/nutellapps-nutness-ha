@@ -34,7 +34,7 @@ def when(booking: dict[str, Any]) -> str:
 
 
 class NutnessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    """Données : `bookings` (cours à venir) et `me` (compte relié)."""
+    """Données : `bookings` (cours à venir), `friends` (amis et leurs cours) et `me` (compte relié)."""
 
     config_entry: ConfigEntry
 
@@ -76,7 +76,17 @@ class NutnessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             for event in state.get("events", []):
                 self._dispatch(event)
         self.last_event_id = state.get("last_event_id", self.last_event_id or 0)
-        return {"bookings": state.get("bookings", [])}
+        return {"bookings": state.get("bookings", []), "friends": await self._friends()}
+
+    async def _friends(self) -> list[dict[str, Any]]:
+        """Amis acceptés et leurs cours : en cas d'échec on garde la liste précédente (les cours du compte priment)."""
+        try:
+            return (await self.api.friends()).get("friends", [])
+        except NutnessAuthError as err:
+            raise ConfigEntryAuthFailed(str(err)) from err
+        except NutnessError as err:
+            _LOGGER.debug("Amis indisponibles (%s)", err)
+            return (self.data or {}).get("friends", [])
 
     async def async_refresh_from_club(self) -> list[dict[str, Any]]:
         """Bouton « Actualiser » : relecture auprès du club, puis état et événements."""

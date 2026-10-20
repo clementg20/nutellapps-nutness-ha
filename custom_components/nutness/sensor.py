@@ -22,6 +22,8 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddE
 class NutnessNextClassSensor(NutnessEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_icon = "mdi:dumbbell"
+    # Cours des amis : pour la carte seulement, pas dans l'historique.
+    _unrecorded_attributes = frozenset({"nutness_friends"})
 
     def _next(self) -> dict | None:
         return next((b for b in self.bookings if b.get("status") in ACTIVE), None)
@@ -53,5 +55,15 @@ class NutnessNextClassSensor(NutnessEntity, SensorEntity):
                     "error": x.get("error"),
                 }
                 for x in self.bookings
+            ],
+            "nutness_friends": [
+                {
+                    "id": f.get("id"),
+                    "first_name": f.get("first_name"),
+                    "letters": f.get("letters"),
+                    "color": f.get("color"),
+                    "bookings": f.get("bookings") or [],
+                }
+                for f in (self.coordinator.data or {}).get("friends", [])
             ],
         }

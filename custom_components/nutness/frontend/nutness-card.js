@@ -1,6 +1,6 @@
 // Carte « Nutness » : prochains cours, planning de la semaine, réserver ou annuler en deux appuis.
 // Chargée automatiquement par l'intégration (aucune ressource à déclarer). Données : capteur « Prochain cours »
-// (attribut nutness_bookings) et actions nutness.planning / reserver / annuler / actualiser.
+// (attributs nutness_bookings et nutness_friends) et actions nutness.planning / reserver / annuler / actualiser.
 
 const DAYS_SHORT = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -22,6 +22,10 @@ const family = (name) => {
   const f = FAMILIES.find(([keys]) => keys.some((k) => l.includes(k)));
   return f ? { emoji: f[1], color: f[2] } : { emoji: '🏅', color: '#616161' };
 };
+
+// Couleurs des amis : mêmes que sur nutness.cgrand.fr (indice donné par le serveur).
+const FRIEND_COLORS = ['#ec4899', '#0ea5e9', '#d97706', '#10b981', '#6366f1', '#ef4444', '#14b8a6', '#a855f7', '#65a30d', '#f97316'];
+const FRIEND_STATUS = { booked: 'réservé', waiting: 'liste d’attente', planned: 'prévu' };
 
 const pad = (n) => String(n).padStart(2, '0');
 const isoDay = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -82,10 +86,11 @@ class NutnessCard extends HTMLElement {
   connectedCallback() {
     if (this.shadowRoot) return;
     this.attachShadow({ mode: 'open' });
-    this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card id="card"></ha-card><dialog id="dialog"><div id="dialog-body"></div></dialog>`;
+    this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card id="card"></ha-card><dialog id="dialog"><div id="dialog-body"></div><div id="dialog-foot"></div></dialog>`;
     this._card = this.shadowRoot.getElementById('card');
     this._dialog = this.shadowRoot.getElementById('dialog');
     this._dialogBody = this.shadowRoot.getElementById('dialog-body');
+    this._dialogFoot = this.shadowRoot.getElementById('dialog-foot');
     this.shadowRoot.addEventListener('click', (e) => this._onClick(e));
     // Fermeture : bouton ✕, touche Échap ou appui à côté de la fenêtre.
     this._dialog.addEventListener('click', (e) => { if (e.target === this._dialog) this._dialog.close(); });
@@ -100,6 +105,30 @@ class NutnessCard extends HTMLElement {
   get _state() { return this._hass?.states[this._config.entity]; }
   get _bookings() { return this._state?.attributes?.nutness_bookings ?? []; }
   get _club() { return this._state?.attributes?.club ?? ''; }
+  get _friends() { return this._state?.attributes?.nutness_friends ?? []; }
+
+  // Cours des amis par clé « date heure activité » (nom complet de l'activité, même club).
+  _friendsByKey() {
+    const map = new Map();
+    for (const f of this._friends) {
+      for (const b of f.bookings ?? []) {
+        const key = `${b.date} ${b.time} ${b.activity}`;
+        map.set(key, [...(map.get(key) ?? []), { f, status: b.status }]);
+      }
+    }
+    return map;
+  }
+
+  _bubble(f, status) {
+    const color = FRIEND_COLORS[Number(f.color) % FRIEND_COLORS.length] ?? FRIEND_COLORS[0];
+    const title = status ? `${f.first_name} · ${FRIEND_STATUS[status] ?? status}` : f.first_name;
+    return `<span class="bub${status === 'waiting' ? ' wait' : ''}" style="--fc:${color}" title="${esc(title)}"><b>${esc(f.letters ?? '?')}</b></span>`;
+  }
+
+  _bubbles(date, time, activity) {
+    const list = this._byKey?.get(`${date} ${time} ${activity}`);
+    return list?.length ? `<span class="bubs">${list.map(({ f, status }) => this._bubble(f, status)).join('')}</span>` : '';
+  }
   _short(name) {
     const club = this._club;
     return club ? name.replace(new RegExp(`\\s+${club.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i'), '').trim() : name;
@@ -209,9 +238,9 @@ class NutnessCard extends HTMLElement {
 
   // ───── Rendu ─────
 
-  _pill(time, activity) {
+  _pill(time, activity, date) {
     const f = family(activity);
-    return `<span class="time">${hh(time)}</span><span class="pill" style="background:${f.color}">${f.emoji} ${esc(this._short(activity))}</span>`;
+    return `<span class="time">${hh(time)}</span><span class="pill" style="background:${f.color}">${f.emoji} ${esc(this._short(activity))}</span>${this._bubbles(date, time, activity)}`;
   }
 
   _statusOf(b) {
@@ -242,7 +271,7 @@ class NutnessCard extends HTMLElement {
       const s = this._statusOf(b);
       return `<div class="row">
         <ha-icon class="st" icon="${s.icon}" style="color:${s.color}"></ha-icon>
-        <div class="txt"><div class="primary">${this._pill(b.time, b.activity)}</div><div class="secondary">${dayLabel(b.date)} · ${esc(s.text)}</div></div>
+        <div class="txt"><div class="primary">${this._pill(b.time, b.activity, b.date)}</div><div class="secondary">${dayLabel(b.date)} · ${esc(s.text)}</div></div>
         ${b.status === 'failed' ? '' : this._actionButton('cancel', b)}
       </div>`;
     }).join('')}</div>`;
@@ -293,7 +322,7 @@ class NutnessCard extends HTMLElement {
         const op = status && status !== 'failed' ? 'cancel' : 'book';
         return `<div class="row">
           <ha-icon class="st" icon="${icon}" style="color:${color}"></ha-icon>
-          <div class="txt"><div class="primary">${this._pill(c.time, activity)}</div><div class="secondary">${esc(text)}</div></div>
+          <div class="txt"><div class="primary">${this._pill(c.time, activity, c.date)}</div><div class="secondary">${esc(text)}</div></div>
           ${this._actionButton(op, item)}
         </div>`;
       }).join('');
@@ -305,12 +334,19 @@ class NutnessCard extends HTMLElement {
     const filter = `<button class="filter" data-action="filter" aria-expanded="${this._filterOpen ? 'true' : 'false'}">
         <ha-icon icon="${this._filterOpen ? 'mdi:chevron-up' : 'mdi:filter-variant'}"></ha-icon><span>${shown}/${all.length}</span></button>
       ${this._filterOpen ? `<div class="chips">${all.map((a) => `<button class="chip${this._masked.has(a) ? '' : ' on'}" data-action="mask" data-activity="${esc(a)}">${family(a).emoji} ${esc(a)}</button>`).join('')}</div>` : ''}`;
-    return `<div class="planning">${nav}${body}${filter}</div>`;
+    return `<div class="planning">${nav}${body}${filter}${this._popup ? '' : this._legend()}</div>`;
+  }
+
+  // Légende des amis : au pied de la fenêtre du planning (ou sous le planning dans la carte).
+  _legend() {
+    const friends = this._friends;
+    return friends.length ? `<div class="legend">${friends.map((f) => `<span class="leg">${this._bubble(f)}${esc(f.first_name)}</span>`).join('')}</div>` : '';
   }
 
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass) return;
     const state = this._state;
+    this._byKey = this._friendsByKey();
     if (!state) {
       this._card.innerHTML = `<div class="warn">Entité introuvable : ${esc(this._config.entity)}</div>`;
       return;
@@ -338,6 +374,7 @@ class NutnessCard extends HTMLElement {
       const scroll = this._dialogBody.scrollTop;
       this._dialogBody.innerHTML = this._renderPlanning();
       this._dialogBody.scrollTop = scroll;
+      this._dialogFoot.innerHTML = this._legend();
       if (!this._dialog.open) this._dialog.showModal();
     } else if (this._dialog.open) this._dialog.close();
   }
@@ -383,17 +420,30 @@ const CSS = `
   .chips { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 6px; }
   .chip { padding: 4px 10px; border-radius: 14px; border: 1px solid var(--divider-color); font-size: 12px; color: var(--secondary-text-color); }
   .chip.on { border-color: var(--primary-color); color: var(--primary-text-color); background: color-mix(in srgb, var(--primary-color) 14%, transparent); }
+  .bubs { flex: none; display: inline-flex; gap: 3px; }
+  .bub { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 4px;
+    box-sizing: border-box; border-radius: 999px; background: var(--fc); color: #fff; font-size: 11px; font-weight: 800; line-height: 1; }
+  /* Lettre centrée sur la hauteur des majuscules (et non sur celle de la ligne). */
+  .bub > b { display: block; font-weight: inherit; text-box: trim-both cap alphabetic; }
+  .bub.wait { background: transparent; box-shadow: inset 0 0 0 2px var(--fc); color: var(--fc); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0 4px; border-top: 1px solid var(--divider-color); margin-top: 6px; }
+  .leg { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    background: var(--secondary-background-color); }
   .warn { padding: 12px; color: var(--error-color); }
   dialog { padding: 0; border: none; border-radius: var(--ha-dialog-border-radius, 24px); width: min(560px, calc(100vw - 16px));
     max-height: min(88vh, 900px); background: var(--card-background-color, var(--ha-card-background, #1c1c1c));
     color: var(--primary-text-color); box-shadow: 0 8px 32px rgba(0, 0, 0, .45); overflow: hidden; }
   dialog::backdrop { background: rgba(0, 0, 0, .55); }
-  #dialog-body { max-height: min(88vh, 900px); overflow-y: auto; overscroll-behavior: contain; padding: 0 8px 12px 16px; }
+  dialog[open] { display: flex; flex-direction: column; }
+  #dialog-foot:empty { display: none; }
+  dialog .legend { flex: none; margin: 0; padding: 10px 16px; }
+  #dialog-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 8px 12px 16px; }
   dialog .planning { margin-top: 0; border-top: none; padding-top: 0; }
   dialog .nav { position: sticky; top: 0; z-index: 1; background: inherit; padding: 8px 0 4px; background: var(--card-background-color, #1c1c1c); }
   dialog .week { flex: 1; text-align: center; }
   @media (max-width: 600px) { dialog { width: 100vw; max-width: 100vw; max-height: 92vh; border-radius: 16px 16px 0 0; margin: auto auto 0; }
-    #dialog-body { max-height: 92vh; padding-bottom: max(12px, env(safe-area-inset-bottom)); } }
+    #dialog-body { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+    #dialog-foot .legend { padding-bottom: max(10px, env(safe-area-inset-bottom)); } }
 `;
 
 if (!customElements.get('nutness-card')) {

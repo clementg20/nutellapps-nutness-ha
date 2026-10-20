@@ -30,8 +30,8 @@ automatiquement à l'ouverture.
 
 | Élément | Rôle |
 |---|---|
-| Carte `custom:nutness-card` | Prochains cours, planning de la semaine, réserver ou annuler (deux appuis), filtre des activités |
-| `sensor.…_prochain_cours` | Date du prochain cours ; tous les cours à venir dans l'attribut `nutness_bookings` |
+| Carte `custom:nutness-card` | Prochains cours, planning de la semaine, réserver ou annuler (deux appuis), filtre des activités, bulles des amis à côté de leurs cours |
+| `sensor.…_prochain_cours` | Date du prochain cours ; tous les cours à venir dans l'attribut `nutness_bookings`, ceux des amis dans `nutness_friends` |
 | `calendar.…_cours` | Cours réservés, en liste d'attente ou prévus |
 | `event.…_reservation` | Chaque changement : réservé, liste d'attente, place libérée, annulé, échec… |
 | `button.…_actualiser` | Relecture immédiate |
@@ -47,6 +47,9 @@ data:
   time: "19:15"
   activity: RPM
 ```
+
+**Amis** : ils se gèrent sur nutness.cgrand.fr (icône Amis). Leurs cours réservés, prévus ou en liste
+d'attente apparaissent dans la carte : bulle pleine, ou cerclée en liste d'attente.
 
 **Notifications** : Paramètres → Appareils et services → Nutness → Configurer.
 
