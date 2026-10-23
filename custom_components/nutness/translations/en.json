@@ -42,7 +42,8 @@
     "notify_events": {
       "options": {
         "promoted": "Spot freed (waiting list → booked)",
-        "planned_done": "Automatic booking done",
+        "planned_booked": "Booking confirmed (planned → booked)",
+        "planned_waiting": "Waiting list (planned → waiting list)",
         "failed": "Automatic booking failed",
         "cancelled": "Class cancelled by the club"
       }

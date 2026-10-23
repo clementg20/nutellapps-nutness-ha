@@ -42,7 +42,8 @@
     "notify_events": {
       "options": {
         "promoted": "Place libérée (liste d'attente → inscrit)",
-        "planned_done": "Réservation automatique faite",
+        "planned_booked": "Réservation confirmée (prévu → réservé)",
+        "planned_waiting": "Liste d'attente (prévu → liste d'attente)",
         "failed": "Réservation automatique échouée",
         "cancelled": "Cours annulé par le club"
       }

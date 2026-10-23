@@ -16,7 +16,7 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import NutnessError, poll_link, start_link
-from .const import AUTHORIZE_URL, CONF_NOTIFY, CONF_NOTIFY_EVENTS, CONF_TOKEN, DEFAULT_NOTIFY_EVENTS, DOMAIN, NOTIFY_CHOICES
+from .const import AUTHORIZE_URL, CONF_NOTIFY, CONF_NOTIFY_EVENTS, CONF_TOKEN, DOMAIN, NOTIFY_CHOICES, notify_events
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class NutnessOptionsFlow(OptionsFlow):
                         custom_value=False,
                     )
                 ),
-                vol.Optional(CONF_NOTIFY_EVENTS, default=options.get(CONF_NOTIFY_EVENTS, DEFAULT_NOTIFY_EVENTS)): selector.SelectSelector(
+                vol.Optional(CONF_NOTIFY_EVENTS, default=notify_events(options)): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=NOTIFY_CHOICES,
                         multiple=True,

@@ -13,7 +13,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import NutnessApi, NutnessAuthError, NutnessError
-from .const import BUS_EVENT, CONF_NOTIFY, CONF_NOTIFY_EVENTS, DEFAULT_NOTIFY_EVENTS, DOMAIN, SCAN_INTERVAL
+from .const import BUS_EVENT, CONF_NOTIFY, DOMAIN, SCAN_INTERVAL, notify_events
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,6 +31,24 @@ def short_name(activity: str, club: str | None) -> str:
 def when(booking: dict[str, Any]) -> str:
     d = datetime.fromisoformat(booking["datetime"])
     return f"{DAYS[d.weekday()]} {d.day} {MONTHS[d.month - 1]} · {d.strftime('%H:%M').replace(':', 'h')}"
+
+
+def notification_text(kind: str, event: dict[str, Any], data: dict[str, Any], club: str | None) -> tuple[str, str, str] | None:
+    """(option, titre, message) de la notification d'un événement, ou None s'il n'en mérite pas."""
+    course = f"{short_name(data['activity'], club)} · {when(data)}"
+    previous = event.get("previous_status")
+    if kind == "promoted":
+        return "promoted", "🎉 Place libérée", f"Une place s'est libérée, tu es inscrit à {course}"
+    if kind == "booked" and previous == "planned":
+        return "planned_booked", "✅ Réservation confirmée", f"Réservation confirmée pour {course}"
+    if kind == "waiting" and previous == "planned":
+        rank = f" · rang {data['waiting_position']}" if data.get("waiting_position") else ""
+        return "planned_waiting", "⏳ Liste d'attente", f"Liste d'attente pour {course}{rank}"
+    if kind == "failed":
+        return "failed", "❌ Réservation automatique échouée", course
+    if kind == "cancelled" and event.get("source") == "watcher":
+        return "cancelled", "🗑️ Cours annulé", course
+    return None
 
 
 class NutnessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -126,24 +144,13 @@ class NutnessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _notify(self, kind: str, event: dict[str, Any], data: dict[str, Any]) -> None:
         options = self.config_entry.options
         targets = options.get(CONF_NOTIFY, [])
-        wanted = options.get(CONF_NOTIFY_EVENTS, DEFAULT_NOTIFY_EVENTS)
+        wanted = notify_events(options)
         if not targets or not data.get("datetime"):
             return
-        previous = event.get("previous_status")
-        category = None
-        if kind == "promoted":
-            category, title = "promoted", "🎉 Place libérée, tu es inscrit"
-        elif kind in ("booked", "waiting") and previous == "planned":
-            category, title = "planned_done", "✅ Réservé" if kind == "booked" else "⏳ Liste d'attente"
-        elif kind == "failed":
-            category, title = "failed", "❌ Réservation automatique échouée"
-        elif kind == "cancelled" and event.get("source") == "watcher":
-            category, title = "cancelled", "🗑️ Cours annulé"
-        if category is None or category not in wanted:
+        notification = notification_text(kind, event, data, self.club)
+        if notification is None or notification[0] not in wanted:
             return
-        message = f"{short_name(data['activity'], self.club)} · {when(data)}"
-        if kind == "waiting" and data.get("waiting_position"):
-            message += f" · rang {data['waiting_position']}"
+        _, title, message = notification
         tag = f"nutness-{data['date']}-{data['time']}"
         for target in targets:
             if target == "persistent_notification":
