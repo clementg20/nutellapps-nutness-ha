@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import voluptuous as vol
 
@@ -38,12 +39,35 @@ PLANNING_SCHEMA = vol.Schema({**BASE, vol.Optional("date"): vol.Any(DATE, cv.dat
 REFRESH_SCHEMA = vol.Schema(BASE)
 
 
+# Chargeur de la carte, intégré à la page (adresse data:, donc sans réseau). Sur iPhone, l'application
+# revenant au premier plan recharge parfois la page avant que le réseau soit prêt : l'import de la carte
+# échoue, le navigateur garde l'échec pour cette adresse et la carte reste en « Erreur de configuration ».
+# Le chargeur réessaie avec une autre adresse (&r=n) jusqu'au succès ; Home Assistant reconstruit
+# alors la carte tout seul (customElements.whenDefined).
+LOADER_JS = """
+const url = location.origin + '%s';
+let n = 0, busy = false;
+const load = () => {
+  if (busy || customElements.get('nutness-card')) return;
+  busy = true;
+  import(n ? url + '&r=' + n : url).then(() => { busy = false; }, () => {
+    busy = false; n += 1;
+    setTimeout(load, Math.min(30000, 1000 * 2 ** Math.min(n, 5)));
+  });
+};
+load();
+addEventListener('online', load);
+addEventListener('pageshow', load);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+"""
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Actions et carte : enregistrées une fois pour toutes les entrées."""
     await hass.http.async_register_static_paths(
         [StaticPathConfig(STATIC_URL, str(Path(__file__).parent / "frontend"), cache_headers=True)]
     )
-    add_extra_js_url(hass, CARD_URL)
+    add_extra_js_url(hass, "data:text/javascript," + quote(LOADER_JS % CARD_URL))
 
     def coordinator_for(call: ServiceCall) -> NutnessCoordinator:
         entry_id = call.data.get("config_entry_id")
