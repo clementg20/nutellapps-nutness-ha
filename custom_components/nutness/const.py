@@ -6,7 +6,7 @@ DOMAIN = "nutness"
 SITE = "https://nutness.cgrand.fr"
 API_BASE = f"{SITE}/ha/v1"
 AUTHORIZE_URL = f"{SITE}/autoriser"
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 
 SCAN_INTERVAL = timedelta(minutes=5)
 CONF_TOKEN = "token"
@@ -28,4 +28,4 @@ def notify_events(options) -> list[str]:
 
 BUS_EVENT = "nutness_event"
 STATIC_URL = "/nutness_static"
-CARD_URL = f"{STATIC_URL}/nutness-card.js?v={VERSION}"
+LOADER_URL = f"{STATIC_URL}/loader.js?v={VERSION}"
