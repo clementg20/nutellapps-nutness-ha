@@ -1,4 +1,4 @@
-"""Capteur « Prochain cours » : la date du prochain cours, et tous les cours à venir en attributs."""
+"""Capteur « Prochain cours » : la date du prochain cours réservé, et tous les cours à venir (favoris compris) en attributs."""
 
 from __future__ import annotations
 
@@ -53,6 +53,7 @@ class NutnessNextClassSensor(NutnessEntity, SensorEntity):
                     "waiting_count": x.get("waiting_count"),
                     "scheduled_at": x.get("scheduled_at"),
                     "error": x.get("error"),
+                    "end_time": x.get("end_time"),
                 }
                 for x in self.bookings
             ],

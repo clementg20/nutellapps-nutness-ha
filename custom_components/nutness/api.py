@@ -89,8 +89,10 @@ class NutnessApi:
     async def refresh(self) -> dict[str, Any]:
         return await self._call("POST", "/refresh")
 
-    async def classes(self, date: str | None, week: bool) -> dict[str, Any]:
+    async def classes(self, date: str | None, week: bool, all_classes: bool = False) -> dict[str, Any]:
         params = {"week": "true" if week else "false"}
+        if all_classes:
+            params["all"] = "true"
         if date:
             params["date"] = date
         return await self._call("GET", "/classes", params=params)
@@ -103,6 +105,12 @@ class NutnessApi:
 
     async def cancel(self, date: str, time: str, activity: str) -> dict[str, Any]:
         return await self._call("POST", "/bookings/cancel", json={"date": date, "time": time, "activity": activity})
+
+    async def favorite(self, date: str, time: str, activity: str) -> dict[str, Any]:
+        return await self._call("POST", "/favorites", json={"date": date, "time": time, "activity": activity})
+
+    async def unfavorite(self, date: str, time: str, activity: str) -> dict[str, Any]:
+        return await self._call("POST", "/favorites/remove", json={"date": date, "time": time, "activity": activity})
 
     async def revoke(self) -> None:
         await self._call("DELETE", "/token")

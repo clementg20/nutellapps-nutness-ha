@@ -1,4 +1,4 @@
-"""Calendrier des cours réservés, en liste d'attente ou prévus."""
+"""Calendrier des cours réservés, en liste d'attente, prévus ou favoris (cours sans réservation)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .coordinator import short_name
 from .entity import NutnessEntity
 
-LABELS = {"booked": "", "waiting": " ⏳", "planned": " 🕒", "failed": " ❌"}
+LABELS = {"booked": "", "waiting": " ⏳", "planned": " 🕒", "failed": " ❌", "favorite": " ⭐"}
 DEFAULT_DURATION = timedelta(minutes=45)
 
 
@@ -34,13 +34,15 @@ class NutnessCalendar(NutnessEntity, CalendarEntity):
                 end = start.replace(hour=h, minute=m)
             if b.get("waiting_position"):
                 detail = f"Liste d'attente : {b['waiting_position']}/{b.get('waiting_count') or '?'}"
+            elif status == "favorite":
+                detail = "Favori · sans réservation"
             elif status == "planned":
                 detail = f"Réservation automatique le {datetime.fromisoformat(b['scheduled_at']).strftime('%d/%m %Hh%M')}" if b.get("scheduled_at") else "Réservation prévue"
             else:
                 detail = b.get("error") or ""
             events.append(CalendarEvent(
                 start=start, end=end, summary=f"{short_name((b.get('activities') or ['?'])[0], club)}{LABELS[status]}",
-                description=detail or None, location=club, uid=f"nutness-{b['id']}",
+                description=detail or None, location=club, uid=f"nutness-{b['id']}" if b.get("id") else f"nutness-fav-{b['date']}-{b['time']}-{b['activity']}",
             ))
         return events
 

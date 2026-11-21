@@ -51,8 +51,16 @@ def notification_text(kind: str, event: dict[str, Any], data: dict[str, Any], cl
     return None
 
 
+def with_favorites(bookings: list[dict[str, Any]], favorites: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Cours du compte et favoris (cours sans réservation, `status: favorite`) pas déjà réservés, dans l'ordre."""
+    key = lambda b: (b.get("date"), b.get("time"), (b.get("activities") or [b.get("activity")])[0])
+    keys = {key(b) for b in bookings}
+    favs = [{**f, "status": "favorite"} for f in favorites if key(f) not in keys]
+    return sorted([*bookings, *favs], key=lambda b: b.get("datetime") or "")
+
+
 class NutnessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    """Données : `bookings` (cours à venir), `friends` (amis et leurs cours) et `me` (compte relié)."""
+    """Données : `bookings` (cours à venir et favoris), `friends` (amis et leurs cours) et `me` (compte relié)."""
 
     config_entry: ConfigEntry
 
@@ -94,7 +102,7 @@ class NutnessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             for event in state.get("events", []):
                 self._dispatch(event)
         self.last_event_id = state.get("last_event_id", self.last_event_id or 0)
-        return {"bookings": state.get("bookings", []), "friends": await self._friends()}
+        return {"bookings": with_favorites(state.get("bookings", []), state.get("favorites", [])), "friends": await self._friends()}
 
     async def _friends(self) -> list[dict[str, Any]]:
         """Amis acceptés et leurs cours : en cas d'échec on garde la liste précédente (les cours du compte priment)."""

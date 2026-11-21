@@ -129,6 +129,50 @@
         }
       }
     },
+    "favori": {
+      "name": "Ajouter un favori",
+      "description": "Ajoute un cours sans réservation (planning du club) aux favoris, montrés avec les cours réservés et aux amis.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Jour du cours."
+        },
+        "time": {
+          "name": "Heure",
+          "description": "Heure de début du cours."
+        },
+        "activity": {
+          "name": "Activité",
+          "description": "Nom de l'activité, même partiel."
+        },
+        "config_entry_id": {
+          "name": "Compte",
+          "description": "À préciser seulement si plusieurs comptes Nutness sont reliés."
+        }
+      }
+    },
+    "retirer_favori": {
+      "name": "Retirer un favori",
+      "description": "Retire un cours sans réservation des favoris.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Jour du cours."
+        },
+        "time": {
+          "name": "Heure",
+          "description": "Heure de début du cours."
+        },
+        "activity": {
+          "name": "Activité",
+          "description": "Nom de l'activité, même partiel."
+        },
+        "config_entry_id": {
+          "name": "Compte",
+          "description": "À préciser seulement si plusieurs comptes Nutness sont reliés."
+        }
+      }
+    },
     "planning": {
       "name": "Planning",
       "description": "Renvoie les cours du club, avec places et listes d'attente.",
@@ -144,6 +188,10 @@
         "config_entry_id": {
           "name": "Compte",
           "description": "À préciser seulement si plusieurs comptes Nutness sont reliés."
+        },
+        "all": {
+          "name": "Tous les cours",
+          "description": "Aussi les cours sans réservation du club (semaine seulement)."
         }
       }
     },

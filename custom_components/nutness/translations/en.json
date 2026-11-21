@@ -129,6 +129,50 @@
         }
       }
     },
+    "favori": {
+      "name": "Add a favorite",
+      "description": "Adds a class without booking (club schedule) to the favorites, shown with the booked classes and to friends.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Day of the class (first day for the schedule)."
+        },
+        "time": {
+          "name": "Time",
+          "description": "Start time of the class."
+        },
+        "activity": {
+          "name": "Activity",
+          "description": "Activity name, even partial (RPM, Pilates…)."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed when several Nutness accounts are linked."
+        }
+      }
+    },
+    "retirer_favori": {
+      "name": "Remove a favorite",
+      "description": "Removes a class without booking from the favorites.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Day of the class (first day for the schedule)."
+        },
+        "time": {
+          "name": "Time",
+          "description": "Start time of the class."
+        },
+        "activity": {
+          "name": "Activity",
+          "description": "Activity name, even partial (RPM, Pilates…)."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed when several Nutness accounts are linked."
+        }
+      }
+    },
     "planning": {
       "name": "Schedule",
       "description": "Returns the club's classes, with spots and waiting lists.",
@@ -144,6 +188,10 @@
         "config_entry_id": {
           "name": "Account",
           "description": "Only needed when several Nutness accounts are linked."
+        },
+        "all": {
+          "name": "All classes",
+          "description": "Also the classes without booking of the club (weekly schedule only)."
         }
       }
     },

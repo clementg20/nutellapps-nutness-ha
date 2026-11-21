@@ -34,7 +34,8 @@ TIME = vol.Match(r"^\d{1,2}:\d{2}(:\d{2})?$")
 BASE = {vol.Optional("config_entry_id"): cv.string}
 BOOKING_SCHEMA = vol.Schema({**BASE, vol.Required("date"): vol.Any(DATE, cv.date), vol.Required("time"): vol.Any(TIME, cv.time),
                              vol.Required("activity"): cv.string})
-PLANNING_SCHEMA = vol.Schema({**BASE, vol.Optional("date"): vol.Any(DATE, cv.date), vol.Optional("week", default=True): cv.boolean})
+PLANNING_SCHEMA = vol.Schema({**BASE, vol.Optional("date"): vol.Any(DATE, cv.date), vol.Optional("week", default=True): cv.boolean,
+                              vol.Optional("all", default=False): cv.boolean})
 REFRESH_SCHEMA = vol.Schema(BASE)
 
 
@@ -94,10 +95,20 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         await c.async_request_refresh()
         return r
 
+    async def favorite(call: ServiceCall) -> ServiceResponse:
+        c = coordinator_for(call)
+        time = text(call.data["time"], "%H:%M")[:5].zfill(5)
+        date = text(call.data["date"], "%Y-%m-%d")
+        add = call.service == "favori"
+        what = f"{'Favori' if add else 'Favori retiré'} {date} {time} {call.data['activity']}"
+        r = await run(c, (c.api.favorite if add else c.api.unfavorite)(date, time, call.data["activity"]), what)
+        await c.async_request_refresh()
+        return r
+
     async def planning(call: ServiceCall) -> ServiceResponse:
         c = coordinator_for(call)
         date = call.data.get("date")
-        r = await run(c, c.api.classes(text(date, "%Y-%m-%d") if date else None, call.data["week"]))
+        r = await run(c, c.api.classes(text(date, "%Y-%m-%d") if date else None, call.data["week"], call.data["all"]))
         return {**r, "club": c.club}
 
     async def refresh(call: ServiceCall) -> ServiceResponse:
@@ -110,6 +121,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     hass.services.async_register(DOMAIN, "reserver", book, BOOKING_SCHEMA, SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, "annuler", cancel, BOOKING_SCHEMA, SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, "favori", favorite, BOOKING_SCHEMA, SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, "retirer_favori", favorite, BOOKING_SCHEMA, SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, "planning", planning, PLANNING_SCHEMA, SupportsResponse.ONLY)
     hass.services.async_register(DOMAIN, "actualiser", refresh, REFRESH_SCHEMA, SupportsResponse.OPTIONAL)
     return True

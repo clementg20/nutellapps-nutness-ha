@@ -40,6 +40,48 @@ annuler:
       selector:
         config_entry:
           integration: nutness
+favori:
+  fields:
+    date:
+      required: true
+      example: "2026-10-20"
+      selector:
+        date:
+    time:
+      required: true
+      example: "19:15"
+      selector:
+        time:
+    activity:
+      required: true
+      example: RPM
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: nutness
+retirer_favori:
+  fields:
+    date:
+      required: true
+      example: "2026-10-20"
+      selector:
+        date:
+    time:
+      required: true
+      example: "19:15"
+      selector:
+        time:
+    activity:
+      required: true
+      example: RPM
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: nutness
 planning:
   fields:
     date:
@@ -48,6 +90,10 @@ planning:
         date:
     week:
       default: true
+      selector:
+        boolean:
+    all:
+      default: false
       selector:
         boolean:
     config_entry_id:

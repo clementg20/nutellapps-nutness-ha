@@ -30,15 +30,16 @@ automatiquement à l'ouverture.
 
 | Élément | Rôle |
 |---|---|
-| Carte `custom:nutness-card` | Prochains cours, planning de la semaine, réserver ou annuler (deux appuis), filtre des activités, bulles des amis à côté de leurs cours |
-| `sensor.…_prochain_cours` | Date du prochain cours ; tous les cours à venir dans l'attribut `nutness_bookings`, ceux des amis dans `nutness_friends` |
-| `calendar.…_cours` | Cours réservés, en liste d'attente ou prévus |
+| Carte `custom:nutness-card` | Prochains cours, planning de la semaine, réserver ou annuler (deux appuis), cours sans réservation en favori (étoile, un appui), filtre des activités, bulles des amis à côté de leurs cours (favoris compris) |
+| `sensor.…_prochain_cours` | Date du prochain cours réservé ; tous les cours à venir dans l'attribut `nutness_bookings` (favoris : `status: favorite`), ceux des amis dans `nutness_friends` |
+| `calendar.…_cours` | Cours réservés, en liste d'attente, prévus ou favoris ⭐ |
 | `event.…_reservation` | Chaque changement : réservé, liste d'attente, place libérée, annulé, échec… |
 | `button.…_actualiser` | Relecture immédiate |
 | Événement `nutness_event` | Le même changement, sur le bus, pour les automatisations |
 
-**Actions** : `nutness.reserver`, `nutness.annuler` (date, heure, activité), `nutness.planning`
-(renvoie les cours d'une journée ou d'une semaine), `nutness.actualiser`.
+**Actions** : `nutness.reserver`, `nutness.annuler`, `nutness.favori`, `nutness.retirer_favori` (date, heure, activité),
+`nutness.planning` (renvoie les cours d'une journée ou d'une semaine ; `all: true` : aussi les cours sans réservation),
+`nutness.actualiser`.
 
 ```yaml
 action: nutness.reserver

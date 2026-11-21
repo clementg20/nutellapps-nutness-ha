@@ -1,6 +1,8 @@
-// Carte « Nutness » : prochains cours, planning de la semaine, réserver ou annuler en deux appuis.
+// Carte « Nutness » : prochains cours, planning de la semaine, réserver ou annuler en deux appuis ; cours sans réservation
+// du club mis en favori d'un appui sur l'étoile (montrés avec les cours réservés, et aux amis par leur bulle).
 // Chargée automatiquement par l'intégration (aucune ressource à déclarer). Données : capteur « Prochain cours »
-// (attributs nutness_bookings et nutness_friends) et actions nutness.planning / reserver / annuler / actualiser.
+// (attributs nutness_bookings — favoris compris, `status: favorite` — et nutness_friends) et actions nutness.planning /
+// reserver / annuler / favori / retirer_favori / actualiser.
 
 const DAYS_SHORT = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -25,7 +27,8 @@ const family = (name) => {
 
 // Couleurs des amis : mêmes que sur nutness.cgrand.fr (indice donné par le serveur).
 const FRIEND_COLORS = ['#ec4899', '#0ea5e9', '#d97706', '#10b981', '#6366f1', '#ef4444', '#14b8a6', '#a855f7', '#65a30d', '#f97316'];
-const FRIEND_STATUS = { booked: 'réservé', waiting: 'liste d’attente', planned: 'prévu' };
+const FRIEND_STATUS = { booked: 'réservé', waiting: 'liste d’attente', planned: 'prévu', favorite: 'favori' };
+const MINE = ['booked', 'waiting', 'planned', 'failed', 'favorite'];
 
 const pad = (n) => String(n).padStart(2, '0');
 const isoDay = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -158,7 +161,7 @@ class NutnessCard extends HTMLElement {
     this._classes = null;
     this._render();
     try {
-      const r = await this._service('planning', { date: isoDay(start), week: true });
+      const r = await this._service('planning', { date: isoDay(start), week: true, all: true });
       const monday = new Date(start); monday.setDate(start.getDate() - ((start.getDay() + 6) % 7));
       const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
       this._classes = (r?.classes ?? []).filter((c) => c.date <= isoDay(sunday));
@@ -189,9 +192,11 @@ class NutnessCard extends HTMLElement {
     this._render();
     const name = this._short(item.activity);
     try {
-      const r = await this._service(op === 'book' ? 'reserver' : 'annuler', { date: item.date, time: item.time, activity: item.activity });
-      this._flash(`${STATUS_LABEL[r?.status] ?? r?.status ?? 'OK'} · ${name} ${hh(item.time)}`);
-      if (this._planning) await this._loadPlanning();
+      const service = { book: 'reserver', cancel: 'annuler', fav: 'favori', unfav: 'retirer_favori' }[op];
+      const r = await this._service(service, { date: item.date, time: item.time, activity: item.activity });
+      const done = op === 'fav' ? '⭐ Ajouté aux favoris' : op === 'unfav' ? 'Retiré des favoris' : STATUS_LABEL[r?.status] ?? r?.status ?? 'OK';
+      this._flash(`${done} · ${name} ${hh(item.time)}`);
+      if (this._planning && (op === 'book' || op === 'cancel')) await this._loadPlanning();
     } catch (err) {
       console.error('nutness', op, item, err);
       this._log(`${op} ${item.date} ${item.time} ${item.activity} : erreur ${err?.message ?? JSON.stringify(err)}`, 'warning');
@@ -224,6 +229,9 @@ class NutnessCard extends HTMLElement {
       if (this._masked.has(a)) this._masked.delete(a); else this._masked.add(a);
       store.set(`${this._key}:masked`, [...this._masked]);
       this._render();
+    } else if (action === 'fav' || action === 'unfav') {
+      // Favori : un seul appui (rien à réserver ni à annuler).
+      this._act(action, { date: el.dataset.date, time: el.dataset.time, activity: el.dataset.activity });
     } else if (action === 'book' || action === 'cancel') {
       // Deux appuis : le premier arme le bouton, le second confirme.
       const item = { date: el.dataset.date, time: el.dataset.time, activity: el.dataset.activity };
@@ -244,6 +252,7 @@ class NutnessCard extends HTMLElement {
   }
 
   _statusOf(b) {
+    if (b.status === 'favorite') return { icon: 'mdi:star', color: 'var(--warning-color, #ffa000)', text: 'Favori · sans réservation' };
     if (b.status === 'booked') return { icon: 'mdi:check-circle', color: 'var(--success-color, #43a047)', text: 'Réservé' };
     if (b.status === 'waiting') return { icon: 'mdi:timer-sand', color: 'var(--warning-color, #ffa000)', text: `Liste d’attente ${b.waiting_position ?? '?'}/${b.waiting_count ?? '?'}` };
     if (b.status === 'planned') {
@@ -257,22 +266,23 @@ class NutnessCard extends HTMLElement {
     const key = `${op} ${item.date} ${item.time} ${item.activity}`;
     const armed = this._armed === key;
     const busy = this._busy === `${item.date} ${item.time} ${item.activity}`;
-    const icon = busy ? 'mdi:loading' : op === 'cancel' ? (armed ? 'mdi:close-circle' : 'mdi:close-circle-outline') : (armed ? 'mdi:check-bold' : 'mdi:plus');
-    const label = op === 'cancel' ? 'Annuler' : 'Réserver';
+    const icon = busy ? 'mdi:loading' : op === 'fav' ? 'mdi:star-outline' : op === 'unfav' ? 'mdi:star'
+      : op === 'cancel' ? (armed ? 'mdi:close-circle' : 'mdi:close-circle-outline') : (armed ? 'mdi:check-bold' : 'mdi:plus');
+    const label = { cancel: 'Annuler', book: 'Réserver', fav: 'Ajouter aux favoris', unfav: 'Retirer des favoris' }[op];
     return `<button class="act ${op}${armed ? ' armed' : ''}${busy ? ' busy' : ''}" data-action="${op}" data-date="${esc(item.date)}" data-time="${esc(item.time)}"
       data-activity="${esc(item.activity)}" title="${label}" aria-label="${label}"><ha-icon icon="${icon}"></ha-icon></button>`;
   }
 
   _renderList() {
     if (!this._listOpen) return '';
-    const items = this._bookings.filter((b) => ['booked', 'waiting', 'planned', 'failed'].includes(b.status));
+    const items = this._bookings.filter((b) => MINE.includes(b.status));
     if (!items.length) return '<div class="empty">Aucun cours réservé</div>';
     return `<div class="list">${items.map((b) => {
       const s = this._statusOf(b);
       return `<div class="row">
         <ha-icon class="st" icon="${s.icon}" style="color:${s.color}"></ha-icon>
         <div class="txt"><div class="primary">${this._pill(b.time, b.activity, b.date)}</div><div class="secondary">${dayLabel(b.date)} · ${esc(s.text)}</div></div>
-        ${b.status === 'failed' ? '' : this._actionButton('cancel', b)}
+        ${b.status === 'failed' ? '' : this._actionButton(b.status === 'favorite' ? 'unfav' : 'cancel', b)}
       </div>`;
     }).join('')}</div>`;
   }
@@ -305,14 +315,22 @@ class NutnessCard extends HTMLElement {
       const rows = visible.map((c) => {
         const activity = c.activities?.[0] ?? '?';
         const item = { date: c.date, time: c.time, activity };
+        const m = mine.get(`${c.date} ${c.time} ${activity}`);
+        if (c.bookable === false) {
+          const fav = m?.status === 'favorite';
+          return `<div class="row">
+            <ha-icon class="st" icon="${fav ? 'mdi:star' : 'mdi:circle-small'}" style="color:${fav ? 'var(--warning-color, #ffa000)' : 'var(--secondary-text-color)'}"></ha-icon>
+            <div class="txt"><div class="primary">${this._pill(c.time, activity, c.date)}</div><div class="secondary">${fav ? 'Favori · sans réservation' : 'Sans réservation'}</div></div>
+            ${this._actionButton(fav ? 'unfav' : 'fav', item)}
+          </div>`;
+        }
         const start = new Date(c.datetime).getTime();
         const open = start - now <= OPENS_MS;
         const p = c.places ?? 0; const o = c.places_taken ?? 0; const w = c.waiting_count ?? 0;
         let dispo;
         if (open) dispo = `${o < p ? `${p - o}/${p} places` : 'Complet'}${w > 0 ? ` · ${w} en attente` : ''}`;
         else { const ov = new Date(start - OPENS_MS); dispo = `${p} places · ouvre ${DAYS_SHORT[(ov.getDay() + 6) % 7]} ${pad(ov.getHours())}h${pad(ov.getMinutes())}`; }
-        const m = mine.get(`${c.date} ${c.time} ${activity}`);
-        const status = m?.status ?? (c.waiting_position != null ? 'waiting' : c.already_registered ? 'booked' : null);
+        const status = (m?.status === 'favorite' ? null : m?.status) ?? (c.waiting_position != null ? 'waiting' : c.already_registered ? 'booked' : null);
         let icon = 'mdi:circle-small'; let color = 'var(--secondary-text-color)'; let text = dispo;
         if (status === 'booked') { icon = 'mdi:check-circle'; color = 'var(--success-color, #43a047)'; text = `Réservé · ${dispo}`; }
         else if (status === 'waiting') { icon = 'mdi:timer-sand'; color = 'var(--warning-color, #ffa000)'; text = `Attente ${c.waiting_position ?? m?.waiting_position ?? '?'}/${w || m?.waiting_count || '?'} · ${dispo}`; }
@@ -351,6 +369,7 @@ class NutnessCard extends HTMLElement {
       this._card.innerHTML = `<div class="warn">Entité introuvable : ${esc(this._config.entity)}</div>`;
       return;
     }
+    // En-tête : cours réservés seulement (comme sur le site, les favoris n'y comptent pas).
     const items = this._bookings.filter((b) => ['booked', 'waiting', 'planned', 'failed'].includes(b.status));
     const next = items.find((b) => b.status !== 'failed');
     const failed = items.some((b) => b.status === 'failed');
@@ -405,6 +424,7 @@ const CSS = `
   button.act { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; transition: background .15s, color .15s; }
   button.act.book { color: var(--primary-color); }
   button.act.cancel { color: var(--error-color, #e53935); }
+  button.act.fav, button.act.unfav { color: var(--warning-color, #ffa000); }
   button.act:hover { background: var(--secondary-background-color); }
   button.act.armed.book { background: var(--primary-color); color: var(--text-primary-color, #fff); }
   button.act.armed.cancel { background: var(--error-color, #e53935); color: #fff; }
